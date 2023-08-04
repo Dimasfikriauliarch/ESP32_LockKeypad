@@ -6,6 +6,7 @@ const int servoPin = 13;
 Servo servo1;
 int buka= 180;
 int tutup= 0;
+int buzz= 27;
 const byte ROWS = 4;    //Jumlah baris keypad
 const byte COLS = 4;    //Jumlah kolom keypad
 #define ledHijau 25
@@ -43,75 +44,126 @@ byte Unlocked[] = {
   0b11111,
 };
 
+byte panah[] = {
+  0b00100,
+  0b00100,
+  0b00100,
+  0b11111,
+  0b10001,
+  0b01010,
+  0b00100,
+};
+
 char customKey;         //Variabel penampung input keypad
 int number = 0;         //Variabel penampung nilai angka
 int password = 1111;    //Password
+int batasPass = 0;      // variabel penampung nilai pass"**" 
+int limit = 4;          // variabel batas nilai pass
+int cursorPass = 6;     // variabel set cursor password lcd
 
 void setup() {
   servo1.attach(servoPin);
   pinMode (ledHijau, OUTPUT);
   pinMode (ledMerah, OUTPUT);
+  pinMode (buzz, OUTPUT);
   lcd.init ();              //Mulai LCD
   lcd.setBacklight(HIGH);   //Nyalakan backlight
   lcd.setCursor(0, 0);
   lcd.print(" START ENGINE ");
+  tone (buzz, 3000);
+  delay(100);
+  noTone(buzz);
   lcd.createChar(0, Locked);
   lcd.createChar(1, Unlocked);
+  lcd.createChar(2, panah);
   lcd.clear();
 }
 
 void loop() {
   digitalWrite (ledHijau, LOW);
-  digitalWrite (ledMerah, LOW);
-  
+  digitalWrite (ledMerah, LOW);  
   lcd.setCursor(0,0);
-  lcd.print("Input Password ");      //Tampilan pada layar LCD
-  lcd.write(byte(0));
-  lcd.setCursor(0, 1);
-
+  lcd.write(byte(2));
+  lcd.print(" Please Enter ");      //Tampilan pada layar LCD
+  lcd.write(byte(2));
   customKey = customKeypad.getKey();    //Baca input keypad
 
   //------------Prosedur jika input berupa angka------------//
   switch(customKey){
     case '0' ... '9':
+    batasPass++; 
+    if (batasPass <= limit){   // jika nilai batasPass tidak lebih dari nilai limit
       lcd.setCursor(0,1);
       number = number * 10 + (customKey - '0');
-      lcd.print(number);
+      lcd.setCursor(cursorPass, 6); 
+      lcd.print("*");
+      cursorPass+=1;  // jarak spasi pada nilai cursorPass password
+    }
     break;
 
     //------------Jika input '#' maka cek password------------//
     case '#':
       if(number == password){           //Jika password benar, maka
-        lcd.setCursor(0,1);
+        lcd.setCursor(0, 1);
         lcd.write(byte(1));
         lcd.print(" Silakan Masuk ");  //Tampilan LCD
         digitalWrite (ledHijau, HIGH);
+        tone(buzz, 3000);
+        delay(200);
+        noTone(buzz);
+        digitalWrite(ledHijau, LOW);
+        delay(300);
+        noTone(buzz);
+        digitalWrite(ledHijau, HIGH);
+        tone(buzz, 3000);
+        delay(200);
+        noTone(buzz);
+        digitalWrite(ledHijau, LOW);
         digitalWrite (ledMerah, LOW);
-        delay (2000);
-        servo1.write(buka); 
+        delay(200);
+        servo1.write(buka);
         number = 0;
+        batasPass= 0;
+        cursorPass= 5;
         lcd.clear(); 
       }
       else{                             //Jika salah, maka
-        lcd.setCursor(0,1);
+        lcd.setCursor(0, 1);
         lcd.write(byte(0));
         lcd.print(" Salah Password");  //Tampilan LCD
         digitalWrite (ledHijau, LOW);
         digitalWrite (ledMerah, HIGH);
         servo1.write(tutup);
+        tone(buzz, 700);
         delay(2000);
+        noTone(buzz);
         number = 0;
+        batasPass= 0;
+        cursorPass=5;
         lcd.clear();
       }
     break;
-    //------------Jika input 'D' maka hapus tampilan dan servo tutup pintu------------//
+    //------------Jika input 'D' maka hapus tampilan dan servo lock pintu------------//
     case 'D':
       number = 0;
-      digitalWrite (ledHijau, LOW);
+      batasPass = 0;
+      cursorPass = 5;
       digitalWrite (ledMerah, HIGH);
+        tone(buzz, 3000);
+        delay(200);
+        noTone(buzz);
+        digitalWrite(ledMerah, LOW);
+        delay(300);
+        noTone(buzz);
+        digitalWrite(ledMerah, HIGH);
+        tone(buzz, 3000);
+        delay(200);
+        noTone(buzz);
+        digitalWrite(ledMerah, LOW);
+        delay(100);
+        digitalWrite (ledHijau, LOW);
       servo1.write(tutup);
       lcd.clear();
     break;
   }
 }// Program Kunci Pintu dengan password input Keypad 4x4 
-
